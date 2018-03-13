@@ -378,7 +378,10 @@
         (app flatten
              (app list
                   (choice literal
-                          (app (curry cons #\\)
+                          (app (λ (c)
+                                 (if (or (char=? c #\{) (char=? c #\}))
+                                     c
+                                     (cons #\\ c)))
                                punctuation-char)
                           (seq (choice symbolic-char alphabetic-char)
                                (zero-or-more word-char)))))))
@@ -494,22 +497,26 @@
 
 (define-values
   (atom term)
-  (letrec ([atom (λ (in)
-                   ((alt string-token
-                         number-token
-                         (app2 (λ (vs) (cons (caddr vs) (cadr vs)))
-                               (seq2 left-brace
-                                     terms
-                                     (app2 length (some (alt spaces newlines)))
-                                     right-brace))) in))]
-           [term (λ (in)
-                   ((app2 cons
-                          (app2 length (some (alt spaces newlines)))
-                          (alt (seq2 string-token
-                                     (opt2 (after underscore atom))
-                                     (opt2 (after carat atom))
-                                     (opt2 primes #:else 0))
-                               number-token)) in))])
+  (letrec
+      ([atom (λ (in)
+               ((alt string-token
+                     number-token
+                     (app2 (λ (vs)
+                             (if (null? vs)
+                                 (cons (caddr vs) (list 0 "" (void) (void) 0))
+                                 (cons (caddr vs) (cadr vs))))
+                           (seq2 left-brace
+                                 terms
+                                 (app2 length (some (alt spaces newlines)))
+                                 right-brace))) in))]
+       [term (λ (in)
+               ((app2 cons
+                      (app2 length (some (alt spaces newlines)))
+                      (alt (seq2 string-token
+                                 (opt2 (after underscore atom))
+                                 (opt2 (after carat atom))
+                                 (opt2 primes #:else 0))
+                           number-token)) in))])
     (values atom term)))
 
 (define terms (many term))
@@ -522,19 +529,38 @@
       ((_ rest*) <- ((some (alt spaces newlines)) rest))
       (and (equal? rest* (list eof)) vs)))
 
+;; Special Words
+
+(define special-words
+  (hash "=>" "⇒"
+        "==>" "⇒"
+        "{" ""
+        "}" ""
+        ;; "\\sqrt" (λ (arg) (cons "√" arg))
+        ))
+
+(define (mathlig str remap)
+  (hash-set! special-words str remap))
+
+(define (lig s)
+  (hash-ref special-words s s))
+
 ;; Printer
 
 (define (print-spaces n)
   (if (= n 0) null (list (hspace n))))
 
-(define (print-atom v)
-  ;; (writeln `(ATOM ,v))
-  (match v
+(define print-atom
+  (match-lambda
     [(? string? s)
-     (let ([c (string-ref s 0)])
-       (cond [(and (char-ci>=? c #\a) (char-ci<=? c #\z)) (italic s)]
-             [(eqv? c #\\) (substring s 1)]
-             [else s]))]
+     (let ([s* (lig s)])
+       (if (equal? s* "")
+           ""
+           (let ([c (string-ref s* 0)])
+             (cond
+              [(and (char-ci>=? c #\a) (char-ci<=? c #\z)) (italic s*)]
+              [(eqv? c #\\) (substring s* 1)]
+              [else s*]))))]
     [(? number? n) (format "~a" n)]
     [(cons (? number? n) vs)
      (apply elem (flatten (list (map print-term vs) (print-spaces n))))]
@@ -548,10 +574,10 @@
 
 (define prime (superscript (larger (element 'tt "'"))))
 
-(define (print-term v)
-  ;; (writeln `(TERM ,v))
-  (match v
+(define print-term
+  (match-lambda
     [(cons n (list base sub super ps))
+     (writeln `(TERM ,(list n base sub super ps)))
      (apply elem (flatten (list (print-spaces n)
                                 (print-atom base)
                                 (print-subscript sub)
@@ -565,6 +591,8 @@
   (or (do (ts <- (parse (open-input-string text-body)))
           (apply elem (map print-term ts)))
       (raise `(TeXmath-SYNTAX-ERROR ,text-body))))
+
+;;; Unit Tests
 
 (module+ test
   (require rackunit)
