@@ -1,8 +1,8 @@
 # TeXmath
 
-Mathematical notation for Scribble docs
+*Mathematical notation for Scribble docs*
 
-TeXmath is a proof-of-concept syntax extension for Racket that provides a useful subset of the LaTeX dollar sign-delimited notation for typesetting math in Scribble docs.
+TeXmath is a Racket library that provides a subset of the LaTeX dollar sign-delimited notation for typesetting math in Scribble docs.
 
 ## Example
 
