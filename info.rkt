@@ -4,11 +4,11 @@
 
 (define deps
   '("base"
-    "parser-tools-lib"
     "scribble-lib"))
 
 (define build-deps
   '("at-exp-lib"
-    "scribble-lib"))
+    "scribble-lib"
+    "rackunit-lib"))
 
 (define scribblings '(("scribblings/main.scrbl" () (library) "texmath")))
