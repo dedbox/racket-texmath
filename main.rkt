@@ -338,13 +338,17 @@
 (define newline? (curryr eqv? #\newline))
 (define underscore? (curryr eqv? #\_))
 (define carat? (curryr eqv? #\^))
+(define left-brace? (curryr eqv? #\{))
+(define right-brace? (curryr eqv? #\}))
 
 (define whitespace-char (next-char char-whitespace? #:not newline?))
 (define alphabetic-char (next-char char-alphabetic?))
 (define symbolic-char (next-char char-symbolic? #:not carat?))
 (define numeric-char (next-char char-numeric?))
-(define punctuation-char (next-char char-punctuation? #:not underscore?))
 (define word-char (choice alphabetic-char numeric-char symbolic-char))
+(define punctuation-char
+  (next-char char-punctuation?
+             #:not (choice underscore? left-brace? right-brace?)))
 
 ;; Character Lists
 
@@ -378,11 +382,7 @@
         (app flatten
              (app list
                   (choice literal
-                          (app (λ (c)
-                                 (if (or (char=? c #\{) (char=? c #\}))
-                                     c
-                                     (cons #\\ c)))
-                               punctuation-char)
+                          (app (curry cons #\\) punctuation-char)
                           (seq (choice symbolic-char alphabetic-char)
                                (zero-or-more word-char)))))))
 
@@ -498,17 +498,7 @@
 (define-values
   (atom term)
   (letrec
-      ([atom (λ (in)
-               ((alt string-token
-                     number-token
-                     (app2 (λ (vs)
-                             (if (null? vs)
-                                 (cons (caddr vs) (list 0 "" (void) (void) 0))
-                                 (cons (caddr vs) (cadr vs))))
-                           (seq2 left-brace
-                                 terms
-                                 (app2 length (some (alt spaces newlines)))
-                                 right-brace))) in))]
+      ([atom (alt string-token number-token)]
        [term (λ (in)
                ((app2 cons
                       (app2 length (some (alt spaces newlines)))
@@ -516,6 +506,11 @@
                                  (opt2 (after underscore atom))
                                  (opt2 (after carat atom))
                                  (opt2 primes #:else 0))
+                           (app2 (λ (vs) (cons (caddr vs) (cadr vs)))
+                                 (seq2 left-brace
+                                       (some term)
+                                       (app2 length (some (alt spaces newlines)))
+                                       right-brace))
                            number-token)) in))])
     (values atom term)))
 
@@ -529,7 +524,7 @@
       ((_ rest*) <- ((some (alt spaces newlines)) rest))
       (and (equal? rest* (list eof)) vs)))
 
-;; Special Words
+;; ``Ligatures''
 
 (define special-words
   (hash "=>" "⇒"
@@ -550,8 +545,31 @@
 (define (print-spaces n)
   (if (= n 0) null (list (hspace n))))
 
-(define print-atom
+(define (print-subscript sub)
+  (if (void? sub) null (subscript (print-term sub))))
+
+(define (print-superscript super)
+  (if (void? super) null (superscript (print-term super))))
+
+(define prime (superscript (larger (element 'tt "'"))))
+
+(define print-term
   (match-lambda
+    [(list (? number? num-spaces)
+           (? string? base)
+           sub
+           super
+           (? number? num-primes))
+     (apply elem (flatten (list (print-spaces num-spaces)
+                                (print-term base)
+                                (print-subscript sub)
+                                (print-superscript super)
+                                (make-list num-primes prime))))]
+    [(list-rest (? number? num-spaces-1)
+                (? number? num-spaces-2)
+                ts)
+     (apply elem (flatten (list (print-spaces (+ num-spaces-1 num-spaces-2))
+                                (map print-term ts))))]
     [(? string? s)
      (let ([s* (lig s)])
        (if (equal? s* "")
@@ -562,30 +580,7 @@
               [(eqv? c #\\) (substring s* 1)]
               [else s*]))))]
     [(? number? n) (format "~a" n)]
-    [(cons (? number? n) vs)
-     (apply elem (flatten (list (map print-term vs) (print-spaces n))))]
     [v (raise `(UNPRINTABLE ,v))]))
-
-(define (print-subscript sub)
-  (if (void? sub) null (subscript (print-atom sub))))
-
-(define (print-superscript super)
-  (if (void? super) null (superscript (print-atom super))))
-
-(define prime (superscript (larger (element 'tt "'"))))
-
-(define print-term
-  (match-lambda
-    [(cons n (list base sub super ps))
-     (writeln `(TERM ,(list n base sub super ps)))
-     (apply elem (flatten (list (print-spaces n)
-                                (print-atom base)
-                                (print-subscript sub)
-                                (print-superscript super)
-                                (make-list ps prime))))]
-    [(cons n v)
-     (apply elem (flatten (list (print-spaces n)
-                                (print-atom v))))]))
 
 (define ($ text-body)
   (or (do (ts <- (parse (open-input-string text-body)))
