@@ -17,11 +17,11 @@
 
 (provide $ inferrule)
 
-;; IR
+;; Abstract Syntax
 
 (struct Term (base subscript superscript primes) #:transparent)
 
-;; Character Classes
+;; Lexer
 
 (define symbol-char/p
   (satisfy/p
@@ -33,8 +33,6 @@
   (or/p letter/p
         digit/p
         symbol-char/p))
-
-;; Lexical Tokens
 
 (struct TOK (value) #:transparent)
 (struct SPC TOK () #:transparent)
@@ -86,7 +84,7 @@
        (cs <- (many/p word-char/p))
        (pure (apply string (cons c cs))))))
 
-;; Parse Grammar
+;; Parser
 
 (define <sub-term>
   (do (char/p #\{)
@@ -126,91 +124,46 @@
       eof/p
       (pure ts)))
 
-;; Parser
-
-(define (parse-term str)
-  (parse-result! (parse-string <term> str)))
-
-(define (parse-term-list str)
-  (parse-result! (parse-string <term-list> str)))
-
-(define (parse-input str)
-  (parse-result! (parse-string <input> str)))
-
-;; Ligatures
-
-(define current-mathligs
-  (make-parameter (make-hash)))
-
-(define (mathlig from to)
-  (hash-set! (current-mathligs) (parse-term from) to))
-
-(define (get-mathlig from)
-  (hash-ref (current-mathligs) from #f))
-
-(mathlig "==>" "⇒")
-
-(mathlig "\\sqrt"
-         (λ (ts)
-           (values
-            (flatten
-             (list (parse-term-list "√(")
-                   (car ts)
-                   (parse-term ")")))
-            (cdr ts))))
-
-(define (apply-mathligs args)
-  (define (remap t ts)
-    (define lig (get-mathlig t))
-    (cond [(string? lig) (values (list (parse-term lig)) ts)]
-          [(procedure? lig) (lig ts)]
-          [else (values (list t) ts)]))
-  (if (null? args)
-      null
-      (call-with-values (λ () (remap (car args) (cdr args)))
-        (λ (pre ts) (append pre (apply-mathligs ts))))))
+(define (parse <start> str)
+  (parse-result! (parse-string <start> str)))
 
 ;; Printer
 
-(define (print-term t)
-  (define (print-spaces k)
-    (if (= k 0) null (list (hspace k))))
-  (define (print-newlines k)
-    (make-list k (linebreak)))
-  (define (print-subscript sub)
-    (if (not sub) null (subscript (print-term sub))))
-  (define (print-superscript super)
-    (if (not super) null (superscript (print-term super))))
-  (define (print-primes primes)
-    (make-list primes (superscript (larger (element 'tt "'")))))
-  (define (print-word str)
-    (map (λ (c)
-           (if (and (char-ci>=? c #\a)
-                    (char-ci<=? c #\z))
-               (italic (string c))
-               (string c)))
-         (string->list str)))
+(define (merge . args)
+  (apply elem (flatten args)))
 
-  (define (merge . args)
-    (apply elem (flatten args)))
-
-  (match t
-    [(Term base sub super primes)
-     (merge (print-term base)
-            (print-subscript sub)
-            (print-superscript super)
-            (print-primes primes))]
-    [(SPC k) (print-spaces k)]
-    [(RET k) (print-newlines k)]
+(define print-token
+  (match-lambda
+    [(SPC k) (if (= k 0) null (list (hspace k)))]
+    [(RET k) (make-list k (linebreak))]
     [(NUM n) (format "~a" n)]
     [(LIT ℓ) ℓ]
     [(PNC p) (string p)]
-    [(WRD w) (apply merge (print-word w))]
-    [(list-rest ts) (map print-term (apply-mathligs ts))]))
+    [(WRD w)
+     (apply merge
+            (map (λ (c)
+                   (if (and (char-ci>=? c #\a)
+                            (char-ci<=? c #\z))
+                       (italic (string c))
+                       (string c)))
+                 (string->list w)))]))
+
+(define print-term
+  (match-lambda
+    [(Term base sub super primes)
+     (merge (print-term base)
+            (if (not sub) null (subscript (print-term sub)))
+            (if (not super) null (superscript (print-term super)))
+            (make-list primes (superscript (larger (element 'tt "'")))))]
+    [(? TOK? tok) (print-token tok)]
+    [(list-rest ts) (apply merge (map print-term ts))]))
 
 ;; Main Export
 
 (define ($ . text-body)
-  (map
-   (λ (v) (if (string? v) (print-term (parse-input v)) v))
-   text-body))
+  (apply
+   elem
+   (flatten
+    (map
+     (λ (v) (if (string? v) (print-term (parse <input> v)) v))
+     text-body))))
