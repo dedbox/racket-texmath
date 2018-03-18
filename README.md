@@ -18,20 +18,14 @@ Logical judgments as rules of inference
 ]
 
 @inferrule[
-     @${e_2 ↝ e_2'}
- ---------------------- "E-App2"
- @${v_1 e_2 ↝ v_1 e_2'}
-]
-
-@inferrule[
   --------------------------------------- "E-AppAbs"
-  @${(λx_11.e_12) v_2 ↝ [x_11 ↦ v_2]e_12}
+  @${(λx_11.e_12) v_2 ↝ [x_11↦{}v_2]e_12}
 ]
 
 @inferrule[
   @${x \fresh}
   ---------------------------- "E-Def"
-  @${Σ ⊢ x ← v ↝ [x ↦ v]Σ ⊢ Ø}
+  @${Σ ⊢ x←v ↝ [x{}↦{}v]Σ ⊢ Ø}
 ]
 
 @inferrule[
@@ -41,9 +35,9 @@ Logical judgments as rules of inference
 ]
 
 @inferrule[
-  @${\{x≔T\} ∈ Γ}
+  @${\{x:T\} ∈ Γ}
   --------------- "T-Var"
-   @${<Γ; x:T>}
+  @${<Γ;x>:T}
 ]
 ``` 
 
