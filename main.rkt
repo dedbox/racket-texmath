@@ -1,614 +1,216 @@
 #lang racket/base
 
-(require racket/function
+(require data/applicative
+         data/either
+         data/monad
+         megaparsack
+         megaparsack/text
+         racket/function
          racket/list
          racket/match
-         racket/splicing
          (only-in scribble/base
-                  ~ bold elem hspace larger italic subscript superscript tabular)
-         (only-in scribble/core element)
-         (for-syntax racket/base
-                     racket/syntax
-                     scribble/base))
+                  elem italic hspace larger linebreak subscript superscript)
+         (only-in scribble/core
+                  element))
 
-(provide inferrule $)
+(require texmath/inferrule)
 
-(define-for-syntax (make-premise top)
-  #`(tabular #:sep (hspace 2) (list #,top)))
+(provide $ inferrule)
 
-(define-for-syntax (make-rule top bottom)
-  #`(tabular #:row-properties '((center vcenter) (center vcenter top-border))
-             (list (list #,(make-premise top))
-                   (list #,bottom))))
+;; IR
 
-(define-for-syntax (make-named-rule top bottom name)
-  #`(tabular #:sep (hspace 1)
-             #:column-properties '(vcenter)
-             (list (list #,(make-rule top bottom) #,name))))
+(struct Term (base subscript superscript primes) #:transparent)
 
-(define-syntax (inferrule stx)
-  (syntax-case stx
-      (---
-       ----
-       -----
-       ------
-       -------
-       --------
-       ---------
-       ----------
-       -----------
-       ------------
-       -------------
-       --------------
-       ---------------
-       ----------------
-       -----------------
-       ------------------
-       -------------------
-       --------------------
-       ---------------------
-       ----------------------
-       -----------------------
-       ------------------------
-       -------------------------
-       --------------------------
-       ---------------------------
-       ----------------------------
-       -----------------------------
-       ------------------------------
-       -------------------------------
-       --------------------------------
-       ---------------------------------
-       ----------------------------------
-       -----------------------------------
-       ------------------------------------
-       -------------------------------------
-       --------------------------------------
-       ---------------------------------------
-       ----------------------------------------
-       -----------------------------------------
-       ------------------------------------------
-       -------------------------------------------
-       --------------------------------------------
-       ---------------------------------------------
-       ----------------------------------------------
-       -----------------------------------------------
-       ------------------------------------------------
-       -------------------------------------------------
-       --------------------------------------------------
-       ---------------------------------------------------
-       ----------------------------------------------------
-       -----------------------------------------------------
-       ------------------------------------------------------
-       -------------------------------------------------------
-       --------------------------------------------------------
-       ---------------------------------------------------------
-       ----------------------------------------------------------
-       -----------------------------------------------------------
-       ------------------------------------------------------------
-       -------------------------------------------------------------
-       --------------------------------------------------------------
-       ---------------------------------------------------------------
-       ----------------------------------------------------------------
-       -----------------------------------------------------------------
-       ------------------------------------------------------------------
-       -------------------------------------------------------------------
-       --------------------------------------------------------------------
-       ---------------------------------------------------------------------
-       ----------------------------------------------------------------------
-       -----------------------------------------------------------------------
-       ------------------------------------------------------------------------
-       -------------------------------------------------------------------------
-       --------------------------------------------------------------------------
-       ---------------------------------------------------------------------------
-       ----------------------------------------------------------------------------
-       -----------------------------------------------------------------------------
-       ------------------------------------------------------------------------------
-       -------------------------------------------------------------------------------
-       --------------------------------------------------------------------------------)
+;; Character Classes
 
-    [(_ premise ... ---- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ----- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------ rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... -------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... --------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ---------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ----------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------ rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... -------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... --------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ---------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ----------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------ rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... -------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... --------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ---------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ----------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------ rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... -------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... --------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ---------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ----------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------ rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... -------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... --------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ---------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ----------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------------ rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... -------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... --------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ---------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ----------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------------------ rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... -------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... --------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ---------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ----------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------------------------ rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... -------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... --------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ---------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ----------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------------------------------ rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... -------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... --------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ---------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ----------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------------------------------------ rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... -------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... --------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ---------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ----------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------------------------------------------ rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... -------------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... --------------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ---------------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ----------------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------------------------------------------------ rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... -------------------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... --------------------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ---------------------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ----------------------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------------------------------------------------------ rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... ------------------------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
-    [(_ premise ... -------------------------------------------------------------------------------- rule-name conclusion) #'(inferrule premise ... --- rule-name conclusion)]
+(define symbol-char/p
+  (satisfy/p
+   (λ (c)
+     (and (char-symbolic? c)
+          (not (char=? c #\^))))))
 
-    [(_ premise ... ---- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ----- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------ conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... -------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... --------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ---------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ----------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------ conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... -------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... --------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ---------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ----------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------ conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... -------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... --------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ---------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ----------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------ conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... -------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... --------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ---------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ----------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------ conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... -------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... --------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ---------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ----------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------------ conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... -------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... --------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ---------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ----------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------------------ conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... -------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... --------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ---------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ----------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------------------------ conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... -------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... --------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ---------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ----------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------------------------------ conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... -------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... --------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ---------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ----------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------------------------------------ conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... -------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... --------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ---------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ----------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------------------------------------------ conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... -------------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... --------------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ---------------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ----------------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------------------------------------------------ conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... -------------------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... --------------------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ---------------------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ----------------------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------------------------------------------------------ conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... ------------------------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
-    [(_ premise ... -------------------------------------------------------------------------------- conclusion) #'(inferrule premise ... --- conclusion)]
+(define word-char/p
+  (or/p letter/p
+        digit/p
+        symbol-char/p))
 
-    [(_ p premise ... --- rule-name conclusion)
-     (make-named-rule #'(list p premise ...) #'conclusion #'rule-name)]
+;; Lexical Tokens
 
-    [(_ p premise ... --- conclusion)
-     (make-named-rule #'(list p premise ...) #'conclusion #'"")]
+(struct TOK (value) #:transparent)
+(struct SPC TOK () #:transparent)
+(struct RET TOK () #:transparent)
+(struct NUM TOK () #:transparent)
+(struct LIT TOK () #:transparent)
+(struct PNC TOK () #:transparent)
+(struct WRD TOK () #:transparent)
 
-    [(_ --- rule-name conclusion)
-     (make-named-rule #'(list ~) #'conclusion #'rule-name)]
+(define <SPC>
+  ((pure SPC)
+   ((pure length)
+    (many+/p (satisfy/p
+              (λ (c)
+                (and (char-whitespace? c)
+                     (not (char=? c #\newline)))))))))
 
-    [(_ --- conclusion)
-     (make-rule #'(list ~) #'conclusion)]
+(define <RET>
+  ((pure RET)
+   ((pure length)
+    (many+/p (char/p #\newline)))))
 
-    [(_ conclusion) #'(elem conclusion)]))
+(define <SPC+RET>
+  (or/p <SPC> <RET>))
 
-;; Monadic Syntax
+(define <NUM>
+  ((pure NUM) integer/p))
 
-(define-syntax do
-  (syntax-rules (<-)
-    [(_ ((x11 ...) <- e12) e2 ...)
-     (let-values ([(x11 ...) e12]) (and x11 ... (do e2 ...)))]
-    [(_ (x11 <- e12) e2 ...) (let ([x11 e12]) (and x11 (do e2 ...)))]
-    [(_ e1 e2 e3 ...) (and e1 (do e2 e3 ...))]
-    [(_ e) e]))
+(define <LIT>
+  ((pure LIT)
+   ((pure (curry apply string))
+    (do (char/p #\\)
+        (or/p (list/p (char/p #\{))
+              (list/p (char/p #\}))
+              (many+/p word-char/p))))))
 
-;; Monadic Operations
+(define <PNC>
+  ((pure PNC)
+   (satisfy/p
+    (λ (c)
+      (and (char-punctuation? c)
+           (not (or (char=? #\_ c)
+                    (char=? #\{ c)
+                    (char=? #\} c))))))))
 
-(define (opt arg #:else [else (void)])
-  (λ (in)
-    (or (arg in) else)))
+(define <WRD>
+  ((pure WRD)
+   (do (c <- (or/p symbol-char/p letter/p))
+       (cs <- (many/p word-char/p))
+       (pure (apply string (cons c cs))))))
 
-(define (choice . args)
-  (λ (in)
-    (ormap (λ (proc) (proc in)) args)))
+;; Parse Grammar
 
-(define (seq . args)
-  (λ (in)
-    (if (null? args)
-        null
-        (do (v <- ((car args) in))
-            (vs <- ((apply seq (cdr args)) in))
-            (cons v vs)))))
+(define <sub-term>
+  (do (char/p #\{)
+      (ts <- <term-list>)
+      (char/p #\})
+      (pure ts)))
 
-(define (app proc . args)
-  (λ (in)
-    (do (arg-vals <- ((apply seq args) in))
-        (apply proc arg-vals))))
+(define <atom>
+  (or/p <NUM>
+        <LIT>
+        <PNC>
+        <WRD>
+        <sub-term>))
 
-(define (app* proc make-args)
-  (λ (in)
-    (do (arg-vals <- (make-args in))
-        (apply proc arg-vals))))
+(define <subscript>
+  (do (char/p #\_) <atom>))
 
-;; Characters
+(define <superscript>
+  (do (char/p #\^) <atom>))
 
-(define end-of-file
-  (λ (in)
-    (do (c <- (peek-char in))
-        (eof-object? c)
-        (read-char in))))
+(define <primes>
+  ((pure length)
+   (many/p (char/p #\'))))
 
-(define (next-char pred #:not [neg-pred #f])
-  (λ (in)
-    (do (c <- (peek-char in))
-        (not (eof-object? c))
-        (pred c)
-        (when neg-pred
-          (not (neg-pred c)))
-        (read-char in))))
+(define <term>
+  ((pure Term)
+   <atom>
+   (or/p <subscript> (pure #f))
+   (or/p <superscript> (pure #f))
+   <primes>))
 
-(define (chr c)
-  (next-char (λ (c*) (eqv? c* c))))
+(define <term-list>
+  (many/p (or/p <term> <SPC> <RET>)))
 
-(define newline? (curryr eqv? #\newline))
-(define underscore? (curryr eqv? #\_))
-(define carat? (curryr eqv? #\^))
-(define left-brace? (curryr eqv? #\{))
-(define right-brace? (curryr eqv? #\}))
-
-(define whitespace-char (next-char char-whitespace? #:not newline?))
-(define alphabetic-char (next-char char-alphabetic?))
-(define symbolic-char (next-char char-symbolic? #:not carat?))
-(define numeric-char (next-char char-numeric?))
-(define word-char (choice alphabetic-char numeric-char symbolic-char))
-(define punctuation-char
-  (next-char char-punctuation?
-             #:not (choice underscore? left-brace? right-brace?)))
-
-;; Character Lists
-
-(define (one-or-more make-char)
-  (λ (in)
-    (do (cs <- (let loop ([acc null])
-                 (or (do (c <- (make-char in))
-                         (not (eof-object? c))
-                         (loop (cons c acc)))
-                     (reverse acc))))
-        (not (null? cs))
-        cs)))
-
-(define (zero-or-more make-char)
-  (λ (in)
-    (or ((one-or-more make-char) in)
-        null)))
-
-;; Lexer
-
-(define number
-  (app* (compose string->number string)
-        (one-or-more numeric-char)))
-(define literal
-  (seq (chr #\\)
-       (choice (chr #\{)
-               (chr #\})
-               (one-or-more word-char))))
-(define word
-  (app* string
-        (app flatten
-             (app list
-                  (choice literal
-                          (app (curry cons #\\) punctuation-char)
-                          (seq (choice symbolic-char alphabetic-char)
-                               (zero-or-more word-char)))))))
-
-(define token
-  (choice
-   (app (λ (cs) (cons 'SPACE (length cs))) (one-or-more whitespace-char))
-   (app (λ (cs) (cons 'PRIME (length cs))) (one-or-more (chr #\')))
-   (app (λ (cs) (cons 'NEWLINE (length cs))) (one-or-more (chr #\newline)))
-   number
-   word
-   (chr #\_)
-   (chr #\^)
-   (chr #\{)
-   (chr #\})
-   end-of-file))
-
-(define (lex in)
-  (let loop ([acc null])
-    (do (tok <- (token in))
-        (if (eof-object? tok)
-            (reverse (cons eof acc))
-            (loop (cons tok acc))))))
-
-;; Parsing Operators
-
-(define (alt . args)
-  (λ (toks)
-    (let try-next ([procs args])
-      (if (null? procs)
-          (values #f toks)
-          (let-values ([(v rest) ((car procs) toks)])
-            (if v (values v rest) (try-next (cdr procs))))))))
-
-(define (after arg1 arg2)
-  (λ (toks)
-    (define-values (v rest) (arg1 toks))
-    (if v (arg2 rest) (values #f toks))))
-
-(define (some arg)
-  (λ (toks)
-    (let loop ([acc null]
-               [rest toks])
-      (if (null? rest)
-          (values (reverse acc) null)
-          (let-values ([(v rest*) (arg rest)])
-            (if v
-                (loop (cons v acc) rest*)
-                (values (reverse acc) rest)))))))
-
-(define (many arg)
-  (λ (toks)
-    (let-values ([(vs rest) ((some arg) toks)])
-      (if (not (null? vs))
-          (values vs rest)
-          (values #f toks)))))
-
-(define (app2 proc . args)
-  (λ (toks)
-    (let-values ([(vs rest) ((apply seq2 args) toks)])
-      (if vs
-          (let ([v* (apply proc vs)])
-            (if v* (values v* rest) (values #f toks)))
-          (values #f toks)))))
-
-(define (opt2 arg #:else [else (void)])
-  (λ (toks)
-    (let-values ([(v rest) (arg toks)])
-      (if v
-          (values v rest)
-          (values else toks)))))
-
-(define (seq2 . args)
-  (λ (toks)
-    (let loop ([acc null]
-               [procs args]
-               [rest toks])
-      (cond [(null? procs) (values (reverse acc) rest)]
-            [(null? rest) (values #f toks)]
-            [else
-             (let-values ([(v rest*) ((car procs) rest)])
-               (if v
-                   (loop (cons v acc) (cdr procs) rest*)
-                   (values #f toks)))]))))
-
-;; Parser Tokens
-
-(define-syntax-rule (tok pat exp)
-  (match-lambda [`pat exp] [_ #f]))
-
-(define (next-token proc)
-  (λ (toks)
-    (if (null? toks)
-        (values #f null)
-        (let ([v (proc (car toks))])
-          (if v (values v (cdr toks)) (values #f toks))))))
-
-(define (pred->next-token pred)
-  (next-token (λ (v) (and (pred v) v))))
-
-(define string-token (pred->next-token string?))
-(define number-token (pred->next-token number?))
-
-;; Parser Rules
-
-(define spaces (next-token (tok (SPACE . ,k) k)))
-(define newlines (next-token (tok (NEWLINE . ,k) k)))
-(define primes (next-token (tok (PRIME . ,k) k)))
-(define underscore (next-token (tok #\_ '_)))
-(define carat (next-token (tok #\^ '^)))
-(define left-brace (next-token (tok #\{ #t)))
-(define right-brace (next-token (tok #\} #t)))
-
-(define-values
-  (atom term)
-  (letrec
-      ([atom (alt string-token number-token)]
-       [term (λ (in)
-               ((app2 cons
-                      (app2 length (some (alt spaces newlines)))
-                      (alt (seq2 string-token
-                                 (opt2 (after underscore atom))
-                                 (opt2 (after carat atom))
-                                 (opt2 primes #:else 0))
-                           (app2 (λ (vs) (cons (caddr vs) (cadr vs)))
-                                 (seq2 left-brace
-                                       (some term)
-                                       (app2 length (some (alt spaces newlines)))
-                                       right-brace))
-                           number-token)) in))])
-    (values atom term)))
-
-(define terms (many term))
+(define <input>
+  (do (ts <- <term-list>)
+      eof/p
+      (pure ts)))
 
 ;; Parser
 
-(define (parse in)
-  (do (toks <- (lex in))
-      ((vs rest) <- (terms toks))
-      ((_ rest*) <- ((some (alt spaces newlines)) rest))
-      (and (equal? rest* (list eof)) vs)))
+(define (parse-term str)
+  (parse-result! (parse-string <term> str)))
 
-;; ``Ligatures''
+(define (parse-term-list str)
+  (parse-result! (parse-string <term-list> str)))
 
-(define special-words
-  (hash "=>" "⇒"
-        "==>" "⇒"
-        "{" ""
-        "}" ""
-        ;; "\\sqrt" (λ (arg) (cons "√" arg))
-        ))
+(define (parse-input str)
+  (parse-result! (parse-string <input> str)))
 
-(define (mathlig str remap)
-  (hash-set! special-words str remap))
+;; Ligatures
 
-(define (lig s)
-  (hash-ref special-words s s))
+(define current-mathligs
+  (make-parameter (make-hash)))
+
+(define (mathlig from to)
+  (hash-set! (current-mathligs) (parse-term from) to))
+
+(define (get-mathlig from)
+  (hash-ref (current-mathligs) from #f))
+
+(mathlig "==>" "⇒")
+
+(mathlig "\\sqrt"
+         (λ (ts)
+           (values
+            (flatten
+             (list (parse-term-list "√(")
+                   (car ts)
+                   (parse-term ")")))
+            (cdr ts))))
+
+(define (apply-mathligs args)
+  (define (remap t ts)
+    (define lig (get-mathlig t))
+    (cond [(string? lig) (values (list (parse-term lig)) ts)]
+          [(procedure? lig) (lig ts)]
+          [else (values (list t) ts)]))
+  (if (null? args)
+      null
+      (call-with-values (λ () (remap (car args) (cdr args)))
+        (λ (pre ts) (append pre (apply-mathligs ts))))))
 
 ;; Printer
 
-(define (print-spaces n)
-  (if (= n 0) null (list (hspace n))))
+(define (print-term t)
+  (define (print-spaces k)
+    (if (= k 0) null (list (hspace k))))
+  (define (print-newlines k)
+    (make-list k (linebreak)))
+  (define (print-subscript sub)
+    (if (not sub) null (subscript (print-term sub))))
+  (define (print-superscript super)
+    (if (not super) null (superscript (print-term super))))
+  (define (print-primes primes)
+    (make-list primes (superscript (larger (element 'tt "'")))))
+  (define (print-word str)
+    (map (λ (c)
+           (if (and (char-ci>=? c #\a)
+                    (char-ci<=? c #\z))
+               (italic (string c))
+               (string c)))
+         (string->list str)))
 
-(define (print-subscript sub)
-  (if (void? sub) null (subscript (print-term sub))))
+  (define (merge . args)
+    (apply elem (flatten args)))
 
-(define (print-superscript super)
-  (if (void? super) null (superscript (print-term super))))
+  (match t
+    [(Term base sub super primes)
+     (merge (print-term base)
+            (print-subscript sub)
+            (print-superscript super)
+            (print-primes primes))]
+    [(SPC k) (print-spaces k)]
+    [(RET k) (print-newlines k)]
+    [(NUM n) (format "~a" n)]
+    [(LIT ℓ) ℓ]
+    [(PNC p) (string p)]
+    [(WRD w) (apply merge (print-word w))]
+    [(list-rest ts) (map print-term (apply-mathligs ts))]))
 
-(define prime (superscript (larger (element 'tt "'"))))
+;; Main Export
 
-(define print-term
-  (match-lambda
-    [(list (? number? num-spaces)
-           (? string? base)
-           sub
-           super
-           (? number? num-primes))
-     (apply elem (flatten (list (print-spaces num-spaces)
-                                (print-term base)
-                                (print-subscript sub)
-                                (print-superscript super)
-                                (make-list num-primes prime))))]
-    [(list-rest (? number? num-spaces-1)
-                (? number? num-spaces-2)
-                ts)
-     (apply elem (flatten (list (print-spaces (+ num-spaces-1 num-spaces-2))
-                                (map print-term ts))))]
-    [(? string? s)
-     (let ([s* (lig s)])
-       (if (equal? s* "")
-           ""
-           (let ([c (string-ref s* 0)])
-             (cond
-              [(and (char-ci>=? c #\a) (char-ci<=? c #\z)) (italic s*)]
-              [(eqv? c #\\) (substring s* 1)]
-              [else s*]))))]
-    [(? number? n) (format "~a" n)]
-    [v (raise `(UNPRINTABLE ,v))]))
-
-(define ($ text-body)
-  (or (do (ts <- (parse (open-input-string text-body)))
-          (apply elem (map print-term ts)))
-      (raise `(TeXmath-SYNTAX-ERROR ,text-body))))
-
-;;; Unit Tests
-
-(module+ test
-  (require rackunit)
-
-  (test-case
-    "lex"
-    (check equal? (lex (open-input-string "ab12cd34")) `("ab12cd34" ,eof))
-    (check equal? (lex (open-input-string "12ab34cd")) `(12 "ab34cd" ,eof))
-    (check equal?
-           (lex (open-input-string "\n  a' 1b_i^2'''"))
-           `((NEWLINE . 1) (SPACE . 2)
-             "a" (PRIME . 1)
-             (SPACE . 1)
-             1
-             "b" #\_ "i" #\^ 2 (PRIME . 3)
-             ,eof)))
-
-  (test-case
-    "parse"
-    (check equal?
-           (parse (open-input-string "\n  a_3' 1b_i^2'''"))
-           `((2 "a" 3 ,(void) 1)
-             (1 . 1)
-             (0 "b" "i" 2 3)))))
+(define ($ . text-body)
+  (map
+   (λ (v) (if (string? v) (print-term (parse-input v)) v))
+   text-body))
