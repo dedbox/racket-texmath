@@ -160,10 +160,5 @@
 
 ;; Main Export
 
-(define ($ . text-body)
-  (apply
-   elem
-   (flatten
-    (map
-     (λ (v) (if (string? v) (print-term (parse <input> v)) v))
-     text-body))))
+(define ($ text-body)
+  (merge (print-term (parse <input> text-body))))
