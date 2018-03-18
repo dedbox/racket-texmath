@@ -8,6 +8,7 @@
          racket/function
          racket/list
          racket/match
+         racket/string
          (only-in scribble/base
                   elem italic hspace larger linebreak subscript superscript)
          (only-in scribble/core
@@ -160,5 +161,5 @@
 
 ;; Main Export
 
-(define ($ text-body)
-  (merge (print-term (parse <input> text-body))))
+(define ($ . text-body)
+  (merge (print-term (parse <input> (string-join text-body "")))))
