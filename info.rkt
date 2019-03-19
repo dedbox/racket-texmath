@@ -4,6 +4,8 @@
 
 (define deps
   '("base"
+    "functional-lib"
+    "megaparsack-lib"
     "scribble-lib"))
 
 (define build-deps
